@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, Form
 import os
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -7,6 +7,7 @@ from app.db import models
 from app.schemas.file import FileOut
 from app.core.security import get_current_user
 from app.db.models import User
+from typing import Optional
 
 router = APIRouter()
 UPLOAD_DIR = "uploads"
@@ -15,15 +16,28 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.post("/upload", response_model=FileOut)
 async def upload_audio(
     file: UploadFile = File(...),
+    custom_name: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    filepath = os.path.join(UPLOAD_DIR, file.filename)
+    _, ext = os.path.splitext(file.filename)
+
+    if custom_name:
+        if not os.path.splitext(custom_name)[1]:
+            filename = custom_name + ext
+        else:
+            filename = custom_name
+    else:
+        filename = file.filename
+
+    filepath = os.path.join(UPLOAD_DIR, filename)
     with open(filepath, "wb") as f:
         f.write(await file.read())
 
     audio_file = models.AudioFile(
-        filename=file.filename, filepath=filepath, owner_id=current_user.id
+        filename=filename,
+        filepath=filepath,
+        owner_id=current_user.id,
     )
     db.add(audio_file)
     await db.commit()

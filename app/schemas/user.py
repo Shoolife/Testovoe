@@ -8,4 +8,4 @@ class UserOut(BaseModel):
     yandex_id: str
     username: str
 
-    model_config = ConfigDict(from_attributes=True)  # заменяет orm_mode в Pydantic v2
+    model_config = ConfigDict(from_attributes=True)  

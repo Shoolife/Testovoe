@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,9 +7,11 @@ from app.db import models
 from app.schemas.token import Token
 from app.services.yandex_oauth import get_yandex_user
 from app.core import security, config
+from app.core.security import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
 
 @router.get("/login")
 async def login():
@@ -18,6 +20,7 @@ async def login():
         f"&redirect_uri={config.settings.YANDEX_REDIRECT_URI}"
     )
     return RedirectResponse(url)
+
 
 @router.get("/callback", response_class=HTMLResponse)
 async def callback(request: Request, db: AsyncSession = Depends(get_db)):
@@ -44,3 +47,16 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
     )
 
     return RedirectResponse(url=f"/profile?token={token}")
+
+
+@router.post("/refresh-token", response_model=Token)
+async def refresh_token(current_user: models.User = Depends(get_current_user)):
+    """
+    Обновление access_token по уже действующему токену
+    """
+    new_token = security.create_access_token(
+        {"sub": str(current_user.id)},
+        config.settings.JWT_SECRET_KEY,
+        config.settings.JWT_ALGORITHM,
+    )
+    return Token(access_token=new_token)

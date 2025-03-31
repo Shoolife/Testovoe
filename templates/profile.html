@@ -12,6 +12,8 @@
 
     <h2>Загрузка нового аудиофайла</h2>
     <form id="upload-form">
+        <label for="custom-name">Название файла (без расширения, необязательно):</label><br>
+        <input type="text" id="custom-name" name="custom_name" placeholder="Моё_аудио"><br><br>
         <input type="file" name="file" required>
         <button type="submit">Загрузить</button>
     </form>
@@ -21,7 +23,7 @@
 
     <h2>Редактирование профиля</h2>
     <form id="edit-form">
-        <label for="username">Новое имя:</label>
+        <label for="username">Имя:</label>
         <input type="text" id="username" name="username" required />
         <button type="submit">Сохранить</button>
     </form>
@@ -29,8 +31,7 @@
     <p id="update-status" style="color: green;"></p>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get("token");
+        let token = new URLSearchParams(window.location.search).get("token");
 
         async function fetchFiles() {
             const res = await fetch('/files/', {
@@ -56,17 +57,37 @@
             });
             if (res.ok) {
                 const user = await res.json();
-                const welcome = document.getElementById('welcome-message');
-                welcome.textContent = `Добро пожаловать, ${user.username}!`;
-
-                // заполним поле редактирования текущим именем
+                document.getElementById('welcome-message').textContent = `Добро пожаловать, ${user.username}!`;
                 document.getElementById('username').value = user.username;
+            }
+        }
+
+        async function refreshToken() {
+            const res = await fetch('/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                token = data.access_token;
+                console.log('Токен обновлён');
+            } else {
+                console.warn('Не удалось обновить токен');
             }
         }
 
         document.getElementById('upload-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
+            const formData = new FormData();
+            const fileInput = document.querySelector('input[name="file"]');
+            const customNameInput = document.getElementById('custom-name');
+            formData.append('file', fileInput.files[0]);
+            if (customNameInput.value.trim()) {
+                formData.append('custom_name', customNameInput.value.trim());
+            }
+
             const res = await fetch('/files/upload', {
                 method: 'POST',
                 headers: {
@@ -74,8 +95,10 @@
                 },
                 body: formData
             });
+
             if (res.ok) {
                 fetchFiles();
+                document.getElementById('upload-form').reset();
             }
         });
 
@@ -95,7 +118,7 @@
             if (res.ok) {
                 statusText.textContent = 'Имя успешно обновлено!';
                 statusText.style.color = 'green';
-                fetchProfile(); // обновить имя в приветствии
+                fetchProfile();
             } else {
                 statusText.textContent = 'Ошибка при обновлении.';
                 statusText.style.color = 'red';
@@ -108,6 +131,7 @@
 
         fetchProfile();
         fetchFiles();
+        setInterval(refreshToken, 900000);
     </script>
 </body>
 </html>
