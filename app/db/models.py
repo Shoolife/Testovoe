@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -9,6 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     yandex_id = Column(String, unique=True, index=True)
     username = Column(String)
+    is_superuser = Column(Boolean, default=False)  # Добавлено
     files = relationship("AudioFile", back_populates="owner")
 
 class AudioFile(Base):

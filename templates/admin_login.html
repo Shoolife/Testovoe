@@ -1,0 +1,26 @@
+<form id="admin-login-form">
+    <input type="text" id="login" placeholder="Логин" required />
+    <input type="password" id="password" placeholder="Пароль" required />
+    <button type="submit">Войти</button>
+  </form>
+  <script>
+    document.getElementById("admin-login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const login = document.getElementById("login").value;
+      const password = document.getElementById("password").value;
+  
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ login, password })
+      });
+  
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = `/admin-panel?token=${data.token}`;
+      } else {
+        alert("Неверные данные");
+      }
+    });
+  </script>
+  

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админская панель</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Админская панель</h1>
+    
+    <button onclick="logout()">Выйти</button>
+
+    <ul id="users-list"></ul>
+
+    <script>
+        const token = new URLSearchParams(window.location.search).get("token");
+
+        async function loadUsers() {
+            const res = await fetch('/admin/users', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const users = await res.json();
+            const list = document.getElementById('users-list');
+            list.innerHTML = '';
+            users.forEach(u => {
+                const li = document.createElement('li');
+                li.innerHTML = `${u.username} <button onclick="deleteUser(${u.id})">Удалить</button>`;
+                list.appendChild(li);
+            });
+        }
+
+        async function deleteUser(userId) {
+            await fetch(`/admin/users/${userId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            loadUsers();
+        }
+
+        function logout() {
+            window.location.href = '/'; // Перенаправление на главную
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>

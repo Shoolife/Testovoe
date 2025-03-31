@@ -1,13 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-class UserCreate(BaseModel):
-    yandex_id: str
-    username: str
+class UserUpdate(BaseModel):
+    username: str | None = None
 
 class UserOut(BaseModel):
     id: int
     yandex_id: str
     username: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)  # заменяет orm_mode в Pydantic v2
